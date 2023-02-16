@@ -303,6 +303,9 @@ namespace FlangeAutomation
         }
     }
 
+    /// <summary>
+    /// Class for data
+    /// </summary>
     public class DataForFastners
     {
         public double Depth { get; set; }
@@ -311,6 +314,14 @@ namespace FlangeAutomation
         public double ZZ { get; set; }
         public Face Faces { get; set; }
 
+        /// <summary>
+        /// To store data
+        /// </summary>
+        /// <param name="Depth"></param>
+        /// <param name="XX"></param>
+        /// <param name="YY"></param>
+        /// <param name="ZZ"></param>
+        /// <param name="Faces"></param>
         public DataForFastners(double Depth, double XX, double YY, double ZZ, Face Faces)
         {
             this.Depth = Depth;
