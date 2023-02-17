@@ -6,6 +6,7 @@ using NXOpen.UF;
 using System.IO;
 using NXOpen.Features;
 using NXOpen.Tooling;
+using NXOpen.CAE;
 
 namespace FlangeAutomation
 {
@@ -44,7 +45,23 @@ namespace FlangeAutomation
             }
             else
             {
+
                 return null;
+            }
+        }
+
+        public static Face SelectAnyFace()
+        {
+            Selection.SelectionType[] Types = { Selection.SelectionType.Faces };
+            Selection.Response resp = theUI.SelectionManager.SelectObject("Select any Face", "Selection", Selection.SelectionScope.AnyInAssembly, false, Types, out NXObject nxObj, out Point3d cursor);
+            if (resp == Selection.Response.ObjectSelected || resp == Selection.Response.ObjectSelectedByName)
+            {
+                return (Face)nxObj;
+            }
+            else
+            {
+                return null;
+
             }
         }
 
@@ -114,7 +131,7 @@ namespace FlangeAutomation
             }
         }
 
-        public static void getHoles(Part part, ref Dictionary<double, DataForFastners> DataForHole)
+        public static void getHoles(Part part, Dictionary<double,DataForFastners> DataForHole)
         {
             int edit = 0;
             string diameter = string.Empty;
@@ -123,15 +140,15 @@ namespace FlangeAutomation
             int throughFlag = 0;
             List<double> diameterValues = new List<double>();
             List<double> depthValues = new List<double>();
-            string[] DiaValue = null;
-            string[] DepValue = null;
-            Face[] faces = null;
+            List<Face> faces = new List<Face>();
             List<double> directionX = new List<double>();
             List<double> directionY = new List<double>();
             List<double> directionZ = new List<double>();
 
+
             try
             {
+                
                 foreach (Feature feature in part.Features)
                 {
                     if (feature.FeatureType == "SIMPLE HOLE")
@@ -139,27 +156,58 @@ namespace FlangeAutomation
                         UF.Modl.AskSimpleHoleParms(feature.Tag, edit, out diameter, out depth, out tipAngle, out throughFlag);
                         string[] separator = { " ", "=" };
                         int count = 2;
-                        DiaValue = diameter.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
-                        DepValue = depth.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
+                        string[] DiaValue = diameter.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
+                        string[] DepValue = depth.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
+                        for (int a = 0; a < DiaValue.Length; a++)
+                        {
+                            if (a % 2 != 0)
+                            {
+                                diameterValues.Add(Convert.ToDouble(DiaValue[a]));
+                                depthValues.Add(Convert.ToDouble(DepValue[a]));
+                            }
+                        }
                         BodyFeature hole = (BodyFeature)feature;
                         directionX.Add(hole.Location.X);
                         directionY.Add(hole.Location.Y);
                         directionZ.Add(hole.Location.Z);
-                        faces = hole.GetFaces();
+                        Face[] f = hole.GetFaces();
+                        foreach(Face fa in f)
+                        {
+                            faces.Add(fa);
+                        }
                     }
                 }
-                for (int a = 0; a < DiaValue.Length; a++)
+
+                //Echo($"{depthValues.Count}");
+                //Echo($"{diameterValues.Count}");
+
+                //Echo($"{faces.Count}");
+
+                //int countofholes = depthValues.Count;
+
+
+                //for (int i = 0; i < faces.Count; i++)
+                //{
+                //    Echo($"{faces[i].JournalIdentifier.ToString()}");
+                //}
+
+                //for (int b = 0; b < diameterValues.Count; b++)
+                //{
+                //    Echo($"{diameterValues[b]}");
+                //}
+
+                int val = 0;
+                foreach(double b in diameterValues)
                 {
-                    if (a % 2 != 0)
-                    {
-                        diameterValues.Add(Convert.ToDouble(DiaValue[a]));
-                        depthValues.Add(Convert.ToDouble(DepValue[a]));
-                    }
+                    DataForHole.Add(b, new DataForFastners(depthValues[val], directionX[val], directionY[val], directionZ[val], faces[val]));
+
                 }
-                for(int b =0; b< diameterValues.Count; b++)
-                {
-                    DataForHole.Add(diameterValues[b], new DataForFastners(depthValues[b], directionX[b], directionY[b], directionZ[b], faces[b]));
-                }
+
+                //for (int j = 0; j < diameterValues.Count; j++)
+                //{
+                //    //Echo($"{j}");
+                //    DataForHole.Add(diameterValues[j], new DataForFastners(depthValues[j], directionX[j], directionY[j], directionZ[j], faces[j]));
+                //}
             }
             catch (NXException ex)
             {
@@ -167,8 +215,9 @@ namespace FlangeAutomation
             }
         }
 
-        public static void FastnersAssembly(Part workPart, double diameter, double depth, double X, double Y, double Z, Face f, Face[] RefrenceFces, Face BoltInserFace)
+        public static void FastnersAssembly(/*Part workPart, */double diameter, double depth, double X, double Y, double Z, Face f, Face[] RefrenceFces, Face BoltInserFace)
         {
+            Echo($"Hi Fs Assembly");
             int type;
             double[] point = new double[3];
             double[] dir = new double[3];
@@ -176,10 +225,12 @@ namespace FlangeAutomation
             double radius;
             double rad;
             int norm_dir;
+            
 
             try
             {
-                workPart = session.Parts.Work;
+                Part workPart = session.Parts.Work;
+
                 FastenerAssy fastenerAssy1 = workPart.ToolingManager.FastenerAssembly.CreateBuilder();
                 FastenerAssemConfigBuilder fastenerAssemConfigBuilder1 = workPart.ToolingManager.FastenerAssemConfig.CreateBuilder();
                 Sketch sketch1 = fastenerAssy1.PositioningFeature;
@@ -200,9 +251,9 @@ namespace FlangeAutomation
                 fastenerAssy1.SetHoleDirection(new Point3d(dir[0], dir[1],dir[2]), 0);
                 fastenerAssy1.SetHolePosition(new Point3d(X, Y, Z), 0);
                 fastenerAssy1.SetHoleOriginPosition(new Point3d(X, Y, Z), 0);
-                fastenerAssy1.SetHoleHeight(20.0, 0);
-                fastenerAssy1.SetHoleOriginHeight(20.0, 0);
-                fastenerAssy1.SetHoleOriginDiameter(50.0, 0);
+                fastenerAssy1.SetHoleHeight(depth, 0);
+                fastenerAssy1.SetHoleOriginHeight(depth, 0);
+                fastenerAssy1.SetHoleOriginDiameter(diameter, 0);
                 fastenerAssy1.SetHoleDefaultCylindricalFace(f, 0);
                 fastenerAssy1.SetHoleSideCylindricalFaces(f, 0);
                 fastenerAssy1.SetHoleSideCylindricalFaces(f, 0);
@@ -262,22 +313,47 @@ namespace FlangeAutomation
                 program = new FlangeAutomateAssembly();
                 CreateTemplateFile();
                 InsertComponent(@"C:\NX\MajorProjects\Parts\RecFlange.prt", @"Base Flange", 0, 0, 0);
+
+                Session.UndoMarkId markId1;
+                markId1 = session.SetUndoMark(Session.MarkVisibility.Visible, "Make Work Part");
+
                 Component cmp1 = selectComponent();
-                Face[] face = SelectFaces();
                 PartLoadStatus pls;
                 session.Parts.SetWorkComponent(cmp1, PartCollection.RefsetOption.Entire, PartCollection.WorkComponentOption.Visible, out pls);
-                pls.Dispose();
                 Part workPart = session.Parts.Work;
-                getHoles(workPart, ref MyData);
-                int i =0;
+                pls.Dispose();
+
+                Session.UndoMarkId markId2;
+                markId2 = session.SetUndoMark(Session.MarkVisibility.Visible, "Make Work Part");
+                
+                getHoles(workPart, MyData);
+
+                Component nullNXOpen_Assemblies_Component = null;
+                PartLoadStatus partLoadStatus2;
+                session.Parts.SetWorkComponent(nullNXOpen_Assemblies_Component, PartCollection.RefsetOption.Entire, PartCollection.WorkComponentOption.Visible, out partLoadStatus2);
+                workPart = session.Parts.Work; // FlangeAssembly1
+                partLoadStatus2.Dispose();
+                session.SetUndoMarkName(markId2, "Make Work Part");
+
+
+                Part work = session.Parts.Work;
+                Part display = session.Parts.Display;
+                //foreach(var items in MyData)
+                //{
+                //    Echo($"{items.Key} {items.Value.Depth} {items.Value.XX} {items.Value.YY} {items.Value.ZZ} {items.Value.Faces.JournalIdentifier}");
+                //}
+                Face[] faceForMate = new Face[2];
+                faceForMate[0] = SelectAnyFace();
+                faceForMate[1] = SelectAnyFace();
+
+                //Echo($"{faceForMate[0].JournalIdentifier}");
+                //Echo($"{faceForMate[1].JournalIdentifier}");
+
                 foreach (var items in MyData)
                 {
-                    FastnersAssembly(workPart, items.Key, items.Value.Depth, items.Value.XX, items.Value.YY, items.Value.ZZ, items.Value.Faces, face, face[0]);
-                    i++;
-                    if (i == 1)
-                    {
-                        break;
-                    }
+                    Echo($"hi");
+                    FastnersAssembly(items.Key, items.Value.Depth, items.Value.XX, items.Value.YY, items.Value.ZZ, items.Value.Faces, faceForMate, faceForMate[0]);
+
                 }
                 program.Dispose();
 
