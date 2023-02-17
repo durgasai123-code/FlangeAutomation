@@ -130,7 +130,90 @@ namespace FlangeAutomation
                 
             }
         }
+        public static void getHoles2(Part part,ref List<double> diaVales, ref List<double> depthValues, ref List<double> dirX, ref List<double> dirY, ref List<double> dirZ, ref List<Face> faces)
+        {
+            int edit = 0;
+            string diameter = string.Empty;
+            string depth = string.Empty;
+            string tipAngle = string.Empty;
+            int throughFlag = 0;
 
+            try
+            {
+
+                foreach (Feature feature in part.Features)
+                {
+                    if (feature.FeatureType == "SIMPLE HOLE")
+                    {
+                        UF.Modl.AskSimpleHoleParms(feature.Tag, edit, out diameter, out depth, out tipAngle, out throughFlag);
+                        string[] separator = { " ", "=" };
+                        int count = 2;
+                        string[] DiaValue = diameter.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
+                        string[] DepValue = depth.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < DiaValue.Length; i++)
+                        {
+                            if (i % 2 != 0)
+                            {
+                                //Console.WriteLine(val1[i]);
+                                diaVales.Add(Convert.ToDouble(DiaValue[i]));
+                            }
+                        }
+                        for (int i = 0; i < DepValue.Length; i++)
+                        {
+                            if (i % 2 != 0)
+                            {
+                                //Console.WriteLine(val1[i]);
+                                depthValues.Add(Convert.ToDouble(DepValue[i]));
+                            }
+                        }
+                        BodyFeature hole = (BodyFeature)feature;
+                        dirX.Add(hole.Location.X);
+                        dirY.Add(hole.Location.Y);
+                        dirZ.Add(hole.Location.Z);
+                        Face[] f = hole.GetFaces();
+                        foreach (Face fa in f)
+                        {
+                            faces.Add(fa);
+                        }
+                    }
+                }
+
+                //Echo($"{depthValues.Count}");
+                //Echo($"{diameterValues.Count}");
+
+                //Echo($"{faces.Count}");
+
+                //int countofholes = depthValues.Count;
+
+
+                //for (int i = 0; i < faces.Count; i++)
+                //{
+                //    Echo($"{faces[i].JournalIdentifier.ToString()}");
+                //}
+
+                //for (int b = 0; b < diameterValues.Count; b++)
+                //{
+                //    Echo($"{diameterValues[b]}");
+                //}
+
+                //int val = 0;
+                //foreach (double b in diameterValues)
+                //{
+                //    DataForHole.Add(b, new DataForFastners(depthValues[val], directionX[val], directionY[val], directionZ[val], faces[val]));
+
+                //}
+
+                //for (int j = 0; j < diameterValues.Count; j++)
+                //{
+                //    //Echo($"{j}");
+                //    DataForHole.Add(diameterValues[j], new DataForFastners(depthValues[j], directionX[j], directionY[j], directionZ[j], faces[j]));
+                //}
+            }
+            catch (NXException ex)
+            {
+                theUI.NXMessageBox.Show("Get Holes", NXMessageBox.DialogType.Error, $"{ex.Message} {ex.StackTrace}");
+            }
+        }
         public static void getHoles(Part part, Dictionary<double,DataForFastners> DataForHole)
         {
             int edit = 0;
@@ -346,15 +429,34 @@ namespace FlangeAutomation
                 faceForMate[0] = SelectAnyFace();
                 faceForMate[1] = SelectAnyFace();
 
+                List<double> diaVales1 = new List<double>();
+                List<double> depthValues1 = new List<double>();
+                List<double> dirX1 = new List<double>();
+                List<double> dirY1 = new List<double>();
+                List<double> dirZ1 = new List<double>();
+                List<Face> faceOfHole = new List<Face>();
+
+                getHoles2(work, ref diaVales1, ref depthValues1, ref dirX1, ref dirY1, ref dirZ1, ref faceOfHole);
+
                 //Echo($"{faceForMate[0].JournalIdentifier}");
                 //Echo($"{faceForMate[1].JournalIdentifier}");
 
-                foreach (var items in MyData)
-                {
-                    Echo($"hi");
-                    FastnersAssembly(items.Key, items.Value.Depth, items.Value.XX, items.Value.YY, items.Value.ZZ, items.Value.Faces, faceForMate, faceForMate[0]);
+                int countOfAllData = diaVales1.Count;
 
+                if(countOfAllData == depthValues1.Count && countOfAllData == dirX1.Count && countOfAllData == dirY1.Count && countOfAllData == dirZ1.Count && countOfAllData == faceOfHole.Count)
+                {
+                    for (int i = 0; i < countOfAllData; i++)
+                    {
+                        FastnersAssembly(diaVales1[i], depthValues1[i], dirX1[i], dirY1[i], dirZ1[i], faceOfHole[i], faceForMate, faceForMate[0]);
+                    }
                 }
+
+                //foreach (var items in MyData)
+                //{
+                //    Echo($"hi");
+                //    FastnersAssembly(items.Key, items.Value.Depth, items.Value.XX, items.Value.YY, items.Value.ZZ, items.Value.Faces, faceForMate, faceForMate[0]);
+
+                //}
                 program.Dispose();
 
             }
