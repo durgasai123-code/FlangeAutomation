@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NXOpen;
 using NXOpen.Assemblies;
@@ -156,6 +156,7 @@ namespace FlangeAutomation
                             {
                                 //Console.WriteLine(val1[i]);
                                 diaVales.Add(Convert.ToDouble(DiaValue[i]));
+
                             }
                         }
                         for (int i = 0; i < DepValue.Length; i++)
@@ -298,22 +299,24 @@ namespace FlangeAutomation
             }
         }
 
-        public static void FastnersAssembly(/*Part workPart, */double diameter, double depth, double X, double Y, double Z, Face f, Face[] RefrenceFces, Face BoltInserFace)
+        public static void FastnersAssembly(int a,double diameter, double depth, double X, double Y, double Z, Face f, Face[] RefrenceFces, Face BoltInserFace)
         {
-            Echo($"Hi Fs Assembly");
-            int type;
-            double[] point = new double[3];
-            double[] dir = new double[3];
-            double[] box = new double[6];
-            double radius;
-            double rad;
-            int norm_dir;
-            
 
+            //Echo($"--------------");
+            //Echo($"{diameter}");
+            //Echo($"{depth}");
+            //Echo($"--------------");
+            int type1;
+            double[] point1 = new double[3];
+            double[] dir1 = new double[3];
+            double[] box1 = new double[6];
+            double radius1;
+            double rad1;
+            int norm_dir1;
+            Part workPart = session.Parts.Work;
             try
             {
-                Part workPart = session.Parts.Work;
-
+                
                 FastenerAssy fastenerAssy1 = workPart.ToolingManager.FastenerAssembly.CreateBuilder();
                 FastenerAssemConfigBuilder fastenerAssemConfigBuilder1 = workPart.ToolingManager.FastenerAssemConfig.CreateBuilder();
                 Sketch sketch1 = fastenerAssy1.PositioningFeature;
@@ -324,14 +327,15 @@ namespace FlangeAutomation
                 fastenerAssy1.SetHoleDiameter(diameter, 0);
                 if (BoltInserFace == RefrenceFces[0])
                 {
-                    UF.Modl.AskFaceData(BoltInserFace.Tag,out type,point,dir,box,out radius, out rad,out norm_dir);
+                    UF.Modl.AskFaceData(BoltInserFace.Tag, out type1, point1, dir1, box1, out radius1, out rad1, out norm_dir1);
                 }
                 else
                 {
-                    UF.Modl.AskFaceData(BoltInserFace.Tag, out type, point, dir, box, out radius, out rad, out norm_dir);
+                    UF.Modl.AskFaceData(BoltInserFace.Tag, out type1, point1, dir1, box1, out radius1, out rad1, out norm_dir1);
+
                 }
                 //direction or point
-                fastenerAssy1.SetHoleDirection(new Point3d(dir[0], dir[1],dir[2]), 0);
+                fastenerAssy1.SetHoleDirection(new Point3d(dir1[0], dir1[1], dir1[2]), 0);
                 fastenerAssy1.SetHolePosition(new Point3d(X, Y, Z), 0);
                 fastenerAssy1.SetHoleOriginPosition(new Point3d(X, Y, Z), 0);
                 fastenerAssy1.SetHoleHeight(depth, 0);
@@ -351,22 +355,39 @@ namespace FlangeAutomation
                 fastenerAssy1.ReadAssemblyConfigure(0, nullNXOpen_Assemblies_Component);
                 fastenerAssy1.DeleteArrayHole(0);
                 fastenerAssy1.EraseFastenerAssembly(0, true, false, false, false, false, true, true, true);
+                //fastenerAssy1.EraseFastenerAssemblyData(0);
                 FastenerAssemConfigBuilder fastenerAssemConfigBuilder2 = workPart.ToolingManager.FastenerAssemConfig.CreateBuilder();
-                NXOpen.Gateway.ImageCaptureBuilder imageCaptureBuilder1 = workPart.ImageCaptureManager.CreateImageCaptureBuilder();
-                imageCaptureBuilder1.Size = NXOpen.Gateway.ImageCaptureBuilder.ImageSize.Pixels64;
-                imageCaptureBuilder1.Size = NXOpen.Gateway.ImageCaptureBuilder.ImageSize.Pixels128;
-                imageCaptureBuilder1.Format = NXOpen.Gateway.ImageCaptureBuilder.ImageFormat.Bmp;
-                imageCaptureBuilder1.ImageFile = "C:\\Users\\durga\\AppData\\Local\\Temp\\durg2380FF505kpv.bmp";
+                //NXOpen.Gateway.ImageCaptureBuilder imageCaptureBuilder1 = workPart.ImageCaptureManager.CreateImageCaptureBuilder();
+                //imageCaptureBuilder1.Size = NXOpen.Gateway.ImageCaptureBuilder.ImageSize.Pixels64;
+                //imageCaptureBuilder1.Size = NXOpen.Gateway.ImageCaptureBuilder.ImageSize.Pixels128;
+                //imageCaptureBuilder1.Format = NXOpen.Gateway.ImageCaptureBuilder.ImageFormat.Bmp;
+                //imageCaptureBuilder1.ImageFile = "C:\\Users\\durga\\AppData\\Local\\Temp\\durg2380FF505kpv.bmp";
                 fastenerAssemConfigBuilder2.Destroy();
-                imageCaptureBuilder1.Destroy();
-                fastenerAssy1.AddParentNewPart("C:\\NX\\MajorProjects\\Parts\\GB-Hex Bolt Stacks 1.prt", 0, true);
-                NXObject nXObject1 = fastenerAssy1.AddTopNode(new Point3d(X, Y, Z), new Point3d(dir[0], dir[1], dir[2]), f, 0);
+                //imageCaptureBuilder1.Destroy();
+                fastenerAssy1.AddParentNewPart("C:\\NX\\MajorProjects\\Parts\\GB-Hex Bolt Stacks"+$"{a}"+".prt", 0, true);
+                NXObject nXObject1 = fastenerAssy1.AddTopNode(new Point3d(X, Y, Z), new Point3d(dir1[0], dir1[1], dir1[2]), f, 0);
                 fastenerAssy1.AddScrewArray("ANSI Metric\\Bolt\\Hex Head\\Hex Bolt, AM.krx", "LENGTH", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Bolt\\Hex Head\\Hex Bolt, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.Screw);
+
                 fastenerAssy1.AddScrewArray("ANSI Metric\\Washer\\Plain\\Plain Washer, Regular, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Washer\\Plain\\Plain Washer, Regular, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.TopStack);
-                fastenerAssy1.AddScrewArray("ANSI Metric\\Nut\\Hex\\Hex Nut, Big, 1, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Nut\\Hex\\Hex Nut, Big, 1, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.BottomStack);
+
+                fastenerAssy1.AddScrewArray("ANSI Metric\\Washer\\Plain\\Plain Washer, Regular, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Washer\\Plain\\Plain Washer, Regular, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.BottomStack);
+
+                if (diameter <= 10)
+                {
+                    fastenerAssy1.AddScrewArray("ANSI Metric\\Nut\\Hex\\Hex Nut, Small, 1, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Nut\\Hex\\Hex Nut, Small, 1, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.BottomStack);
+
+                }
+                else
+                {
+                    fastenerAssy1.AddScrewArray("ANSI Metric\\Nut\\Hex\\Hex Nut, Big, 1, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Nut\\Hex\\Hex Nut, Small, 1, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.BottomStack);
+
+                }
+
                 fastenerAssy1.UpdateFastenerStacks(0, true, false);
+                workPart = session.Parts.Work;
                 fastenerAssy1.UpdateDefaultStandard(0, "Common", "Simple", "");
                 fastenerAssy1.SetAssemblyExtentLength(0, 1.5);
+                //fastenerAssy1.EraseFastenerAssemblyData(0);
                 fastenerAssy1.DeleteArrayHole(0);
                 fastenerAssy1.RemoveFastenerConstraints(0);
                 fastenerAssy1.DeleteArrayHole(0);
@@ -374,8 +395,10 @@ namespace FlangeAutomation
                 fastenerAssy1.EraseFastenerSetupData();
                 fastenerAssemConfigBuilder1.Destroy();
                 session.CleanUpFacetedFacesAndEdges();
+                
+                
             }
-            catch(NXException ex)
+            catch (NXException ex)
             {
                 theUI.NXMessageBox.Show("Fastener Assembly", NXMessageBox.DialogType.Error, ex.Message + " " + ex.StackTrace);
             }
@@ -389,7 +412,7 @@ namespace FlangeAutomation
 
         public static void Main()
         {
-            Dictionary<double, DataForFastners> MyData = new Dictionary<double, DataForFastners>();
+            //Dictionary<double, DataForFastners> MyData = new Dictionary<double, DataForFastners>();
             
             try
             {
@@ -408,8 +431,17 @@ namespace FlangeAutomation
 
                 Session.UndoMarkId markId2;
                 markId2 = session.SetUndoMark(Session.MarkVisibility.Visible, "Make Work Part");
-                
-                getHoles(workPart, MyData);
+
+                List<double> diaVales1 = new List<double>();
+                List<double> depthValues1 = new List<double>();
+                List<double> dirX1 = new List<double>();
+                List<double> dirY1 = new List<double>();
+                List<double> dirZ1 = new List<double>();
+                List<Face> faceOfHole = new List<Face>();
+
+                getHoles2(workPart, ref diaVales1, ref depthValues1, ref dirX1, ref dirY1, ref dirZ1, ref faceOfHole);
+
+                //getHoles(workPart, MyData);
 
                 Component nullNXOpen_Assemblies_Component = null;
                 PartLoadStatus partLoadStatus2;
@@ -421,42 +453,26 @@ namespace FlangeAutomation
 
                 Part work = session.Parts.Work;
                 Part display = session.Parts.Display;
-                //foreach(var items in MyData)
-                //{
-                //    Echo($"{items.Key} {items.Value.Depth} {items.Value.XX} {items.Value.YY} {items.Value.ZZ} {items.Value.Faces.JournalIdentifier}");
-                //}
+                
                 Face[] faceForMate = new Face[2];
                 faceForMate[0] = SelectAnyFace();
                 faceForMate[1] = SelectAnyFace();
 
-                List<double> diaVales1 = new List<double>();
-                List<double> depthValues1 = new List<double>();
-                List<double> dirX1 = new List<double>();
-                List<double> dirY1 = new List<double>();
-                List<double> dirZ1 = new List<double>();
-                List<Face> faceOfHole = new List<Face>();
-
-                getHoles2(work, ref diaVales1, ref depthValues1, ref dirX1, ref dirY1, ref dirZ1, ref faceOfHole);
-
-                //Echo($"{faceForMate[0].JournalIdentifier}");
                 //Echo($"{faceForMate[1].JournalIdentifier}");
 
                 int countOfAllData = diaVales1.Count;
 
-                if(countOfAllData == depthValues1.Count && countOfAllData == dirX1.Count && countOfAllData == dirY1.Count && countOfAllData == dirZ1.Count && countOfAllData == faceOfHole.Count)
+                if (countOfAllData == depthValues1.Count && countOfAllData == dirX1.Count && countOfAllData == dirY1.Count && countOfAllData == dirZ1.Count && countOfAllData == faceOfHole.Count)
                 {
                     for (int i = 0; i < countOfAllData; i++)
                     {
-                        FastnersAssembly(diaVales1[i], depthValues1[i], dirX1[i], dirY1[i], dirZ1[i], faceOfHole[i], faceForMate, faceForMate[0]);
+
+                        FastnersAssembly(i, diaVales1[i], depthValues1[i], dirX1[i], dirY1[i], dirZ1[i], faceOfHole[i], faceForMate, faceForMate[0]);
+
                     }
                 }
 
-                //foreach (var items in MyData)
-                //{
-                //    Echo($"hi");
-                //    FastnersAssembly(items.Key, items.Value.Depth, items.Value.XX, items.Value.YY, items.Value.ZZ, items.Value.Faces, faceForMate, faceForMate[0]);
 
-                //}
                 program.Dispose();
 
             }
