@@ -215,89 +215,6 @@ namespace FlangeAutomation
                 theUI.NXMessageBox.Show("Get Holes", NXMessageBox.DialogType.Error, $"{ex.Message} {ex.StackTrace}");
             }
         }
-        public static void getHoles(Part part, Dictionary<double,DataForFastners> DataForHole)
-        {
-            int edit = 0;
-            string diameter = string.Empty;
-            string depth = string.Empty;
-            string tipAngle = string.Empty;
-            int throughFlag = 0;
-            List<double> diameterValues = new List<double>();
-            List<double> depthValues = new List<double>();
-            List<Face> faces = new List<Face>();
-            List<double> directionX = new List<double>();
-            List<double> directionY = new List<double>();
-            List<double> directionZ = new List<double>();
-
-
-            try
-            {
-                
-                foreach (Feature feature in part.Features)
-                {
-                    if (feature.FeatureType == "SIMPLE HOLE")
-                    {
-                        UF.Modl.AskSimpleHoleParms(feature.Tag, edit, out diameter, out depth, out tipAngle, out throughFlag);
-                        string[] separator = { " ", "=" };
-                        int count = 2;
-                        string[] DiaValue = diameter.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
-                        string[] DepValue = depth.Split(separator, count, StringSplitOptions.RemoveEmptyEntries);
-                        for (int a = 0; a < DiaValue.Length; a++)
-                        {
-                            if (a % 2 != 0)
-                            {
-                                diameterValues.Add(Convert.ToDouble(DiaValue[a]));
-                                depthValues.Add(Convert.ToDouble(DepValue[a]));
-                            }
-                        }
-                        BodyFeature hole = (BodyFeature)feature;
-                        directionX.Add(hole.Location.X);
-                        directionY.Add(hole.Location.Y);
-                        directionZ.Add(hole.Location.Z);
-                        Face[] f = hole.GetFaces();
-                        foreach(Face fa in f)
-                        {
-                            faces.Add(fa);
-                        }
-                    }
-                }
-
-                //Echo($"{depthValues.Count}");
-                //Echo($"{diameterValues.Count}");
-
-                //Echo($"{faces.Count}");
-
-                //int countofholes = depthValues.Count;
-
-
-                //for (int i = 0; i < faces.Count; i++)
-                //{
-                //    Echo($"{faces[i].JournalIdentifier.ToString()}");
-                //}
-
-                //for (int b = 0; b < diameterValues.Count; b++)
-                //{
-                //    Echo($"{diameterValues[b]}");
-                //}
-
-                int val = 0;
-                foreach(double b in diameterValues)
-                {
-                    DataForHole.Add(b, new DataForFastners(depthValues[val], directionX[val], directionY[val], directionZ[val], faces[val]));
-
-                }
-
-                //for (int j = 0; j < diameterValues.Count; j++)
-                //{
-                //    //Echo($"{j}");
-                //    DataForHole.Add(diameterValues[j], new DataForFastners(depthValues[j], directionX[j], directionY[j], directionZ[j], faces[j]));
-                //}
-            }
-            catch (NXException ex)
-            {
-                theUI.NXMessageBox.Show("Get Holes", NXMessageBox.DialogType.Error, $"{ex.Message} {ex.StackTrace}");
-            }
-        }
 
         public static void FastnersAssembly(int a,double diameter, double depth, double X, double Y, double Z, Face f, Face[] RefrenceFces, Face BoltInserFace)
         {
@@ -372,7 +289,7 @@ namespace FlangeAutomation
 
                 fastenerAssy1.AddScrewArray("ANSI Metric\\Washer\\Plain\\Plain Washer, Regular, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Washer\\Plain\\Plain Washer, Regular, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.BottomStack);
 
-                if (diameter <= 10)
+                if (diameter <= 15)
                 {
                     fastenerAssy1.AddScrewArray("ANSI Metric\\Nut\\Hex\\Hex Nut, Small, 1, AM.krx", "THICKNESS", "C:\\Program Files\\Siemens\\NX2007\\nxparts\\Reuse Library\\Reuse Examples\\Standard Parts", "Fastener Assembly Configuration Library", "ANSI Metric\\Nut\\Hex\\Hex Nut, Small, 1, AM.prt", 0, NXOpen.Tooling.FastenerAssy.StackTypeMethod.BottomStack);
 
@@ -412,69 +329,57 @@ namespace FlangeAutomation
 
         public static void Main()
         {
-            //Dictionary<double, DataForFastners> MyData = new Dictionary<double, DataForFastners>();
-            
             try
             {
                 program = new FlangeAutomateAssembly();
                 CreateTemplateFile();
-                InsertComponent(@"C:\NX\MajorProjects\Parts\RecFlange.prt", @"Base Flange", 0, 0, 0);
-
-                Session.UndoMarkId markId1;
-                markId1 = session.SetUndoMark(Session.MarkVisibility.Visible, "Make Work Part");
-
+                InsertComponent(@"C:\NX\MajorProjects\Parts\Flange with simple holes.prt", @"Base Flange", 0, 0, 0);
                 Component cmp1 = selectComponent();
                 PartLoadStatus pls;
                 session.Parts.SetWorkComponent(cmp1, PartCollection.RefsetOption.Entire, PartCollection.WorkComponentOption.Visible, out pls);
                 Part workPart = session.Parts.Work;
                 pls.Dispose();
-
-                Session.UndoMarkId markId2;
-                markId2 = session.SetUndoMark(Session.MarkVisibility.Visible, "Make Work Part");
-
                 List<double> diaVales1 = new List<double>();
                 List<double> depthValues1 = new List<double>();
                 List<double> dirX1 = new List<double>();
                 List<double> dirY1 = new List<double>();
                 List<double> dirZ1 = new List<double>();
                 List<Face> faceOfHole = new List<Face>();
-
                 getHoles2(workPart, ref diaVales1, ref depthValues1, ref dirX1, ref dirY1, ref dirZ1, ref faceOfHole);
-
-                //getHoles(workPart, MyData);
-
                 Component nullNXOpen_Assemblies_Component = null;
                 PartLoadStatus partLoadStatus2;
                 session.Parts.SetWorkComponent(nullNXOpen_Assemblies_Component, PartCollection.RefsetOption.Entire, PartCollection.WorkComponentOption.Visible, out partLoadStatus2);
                 workPart = session.Parts.Work; // FlangeAssembly1
                 partLoadStatus2.Dispose();
-                session.SetUndoMarkName(markId2, "Make Work Part");
-
-
                 Part work = session.Parts.Work;
                 Part display = session.Parts.Display;
-                
                 Face[] faceForMate = new Face[2];
                 faceForMate[0] = SelectAnyFace();
                 faceForMate[1] = SelectAnyFace();
-
                 //Echo($"{faceForMate[1].JournalIdentifier}");
-
                 int countOfAllData = diaVales1.Count;
-
+                //foreach(double d in diaVales1)
+                //{
+                //    Echo($"Diameter {d}");
+                //}
+                //Echo($"{diaVales1.Count}");
+                //Echo($"{depthValues1.Count}");
+                //Echo($"{dirX1.Count}");
+                //Echo($"{dirY1.Count}");
+                //Echo($"{dirZ1.Count}");
+                //Echo($"{faceOfHole.Count}");
                 if (countOfAllData == depthValues1.Count && countOfAllData == dirX1.Count && countOfAllData == dirY1.Count && countOfAllData == dirZ1.Count && countOfAllData == faceOfHole.Count)
                 {
                     for (int i = 0; i < countOfAllData; i++)
                     {
-
                         FastnersAssembly(i, diaVales1[i], depthValues1[i], dirX1[i], dirY1[i], dirZ1[i], faceOfHole[i], faceForMate, faceForMate[0]);
-
                     }
                 }
-
-
+                else
+                {
+                    Echo("not same");
+                }
                 program.Dispose();
-
             }
             catch(NXException ex)
             {
